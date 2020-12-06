@@ -11,12 +11,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Lista de Clientes e Pets',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Lista de Clientes e Pets'),
     );
   }
 }
@@ -32,9 +32,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Future request;
+  List<Welcome> results = [];
   @override
   void initState() {
-    request = requisicao();
+    setState(() {
+      getResults();
+    });
     super.initState();
   }
 
@@ -44,32 +47,54 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: FutureBuilder<Welcome>(
-        builder: (BuildContext context, AsyncSnapshot<Welcome> snapshot) {
-          print(snapshot.data);
-          if (snapshot.hasData) {
-            return ListTile(title: Text(snapshot.data.cliente[0]));
-          }
-          return CircularProgressIndicator();
-        },
-        future: request,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+                'Clique no botão de Download para ver a Lista de Clientes e Pets',
+                style: TextStyle(
+                  fontSize: 20,
+                )),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            itemBuilder: (BuildContext context, int i) {
+              return ListTile(
+                title: Text(results[i].cliente),
+                subtitle: Text(results[i].pet),
+              );
+            },
+            itemCount: results.length,
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async => {request = requisicao()},
+        child: Icon(Icons.download_rounded),
+        onPressed: () => {
+          setState(() {
+            getResults();
+          })
+        },
       ),
     );
   }
 
-  Future<Welcome> requisicao() async {
+  getResults() async {
+    results = await requisicao();
+  }
+
+  Future<List<Welcome>> requisicao() async {
     var url = 'http://192.168.192.26:3000/atendimentos';
+
     var response = await http.get(url);
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    var result = json.decode(response.body);
-    var teste = Welcome.fromJson(result);
 
-    print(teste.id);
+    List<Welcome> welcomes;
 
-    return teste;
+    welcomes = (json.decode(response.body) as List)
+        .map((i) => Welcome.fromJson(i))
+        .toList();
+
+    return welcomes;
   }
 }
